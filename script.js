@@ -107,7 +107,7 @@ const songs = [
 	}
 ];
 
-let tracks = [...songs];
+const tracks = [...songs];
 let currentTrackIndex = 0;
 let autoplay = true;
 let isSeeking = false;
@@ -132,8 +132,6 @@ const volumeValue = document.querySelector('#volume-value');
 const trackCount = document.querySelector('#track-count');
 const statusMessage = document.querySelector('#status-message');
 const playingBadge = document.querySelector('#playing-badge');
-const fileInput = document.querySelector('#file-input');
-const clearButton = document.querySelector('#clear-button');
 const coverImg = document.querySelector('#cover-img');
 
 const formatTime = (time) => {
@@ -194,6 +192,20 @@ function renderPlaylist() {
 	refreshAllMarquees();
 }
 
+function updateActiveTrack() {
+	const items = playlist.querySelectorAll('.playlist-item');
+	items.forEach((item, index) => {
+		const isActive = index === currentTrackIndex;
+		item.classList.toggle('active', isActive);
+		item.setAttribute('aria-selected', String(isActive));
+	});
+
+	const activeItem = playlist.querySelector(`.playlist-item[data-index="${currentTrackIndex}"]`);
+	if (activeItem) {
+		activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+	}
+}
+
 function loadTrack(index) {
 	if (!tracks.length) return;
 
@@ -212,14 +224,9 @@ function loadTrack(index) {
 	currentTime.textContent = '0:00';
 	duration.textContent = track.duration || '0:00';
 	playingBadge.textContent = 'READY';
-	statusMessage.textContent = `Ready to play ${track.title} by ${track.artist}`;
+	statusMessage.textContent = `Ready: ${track.title} by ${track.artist}`;
 
-	renderPlaylist();
-
-	const activeItem = playlist.querySelector(`.playlist-item[data-index="${currentTrackIndex}"]`);
-	if (activeItem) {
-		activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-	}
+	updateActiveTrack();
 }
 
 function updatePlayButton() {
@@ -230,23 +237,32 @@ function updatePlayButton() {
 	playingBadge.textContent = isPlaying ? 'PLAYING' : 'PAUSED';
 }
 
+async function playTrack(index) {
+	if (!tracks.length) return;
+	if (index !== undefined && index !== currentTrackIndex) {
+		loadTrack(index);
+	}
+	try {
+		await audio.play();
+		statusMessage.textContent = `Playing: ${tracks[currentTrackIndex].title}`;
+	} catch (err) {
+		console.error('Play failed:', err);
+		statusMessage.textContent = `Playback error: ${err.message}`;
+	}
+	updatePlayButton();
+}
+
 async function togglePlay() {
 	if (!tracks.length) return;
 	if (!audio.src) loadTrack(currentTrackIndex);
 
 	if (audio.paused) {
-		try {
-			await audio.play();
-			statusMessage.textContent = `Playing: ${tracks[currentTrackIndex].title}`;
-		} catch (err) {
-			console.error('Play failed:', err);
-			statusMessage.textContent = `Playing error: ${err.message}`;
-		}
+		await playTrack();
 	} else {
 		audio.pause();
 		statusMessage.textContent = `Paused: ${tracks[currentTrackIndex].title}`;
+		updatePlayButton();
 	}
-	updatePlayButton();
 }
 
 // Controls
@@ -255,63 +271,36 @@ playButton.addEventListener('click', togglePlay);
 previousButton.addEventListener('click', () => {
 	if (tracks.length) {
 		loadTrack(currentTrackIndex - 1);
-		togglePlay();
+		playTrack();
 	}
 });
 
 nextButton.addEventListener('click', () => {
 	if (tracks.length) {
 		loadTrack(currentTrackIndex + 1);
-		togglePlay();
+		playTrack();
 	}
 });
 
-// Playlist Selection
+// Playlist Selection: click any track to play it immediately
 playlist.addEventListener('click', (event) => {
 	const item = event.target.closest('.playlist-item');
 	if (!item) return;
 	const index = Number(item.dataset.index);
-	loadTrack(index);
-	togglePlay();
+	if (index === currentTrackIndex) {
+		togglePlay();
+	} else {
+		loadTrack(index);
+		playTrack();
+	}
 });
 
 playlist.addEventListener('keydown', (event) => {
 	if (event.key === 'Enter' || event.key === ' ') {
 		event.preventDefault();
-		event.target.click();
+		const item = event.target.closest('.playlist-item');
+		if (item) item.click();
 	}
-});
-
-// File upload support
-fileInput.addEventListener('change', () => {
-	const importedTracks = [...fileInput.files]
-		.filter((file) => file.type.startsWith('audio/') || file.type.startsWith('video/'))
-		.map((file) => ({
-			title: file.name.replace(/\.[^/.]+$/, ''),
-			artist: 'Local Upload',
-			src: URL.createObjectURL(file),
-			duration: '--:--',
-			cover: 'image.png',
-			local: true
-		}));
-
-	if (!importedTracks.length) return;
-
-	tracks = [...tracks, ...importedTracks];
-	const firstImportedIndex = tracks.length - importedTracks.length;
-	loadTrack(firstImportedIndex);
-	togglePlay();
-	fileInput.value = '';
-});
-
-// Reset Playlist
-clearButton.addEventListener('click', () => {
-	tracks.filter((track) => track.local).forEach((track) => URL.revokeObjectURL(track.src));
-	tracks = [...songs];
-	audio.pause();
-	loadTrack(0);
-	updatePlayButton();
-	statusMessage.textContent = 'Playlist reset to default songs.';
 });
 
 // Progress Bar & Scrubbing
@@ -380,7 +369,7 @@ audio.addEventListener('pause', updatePlayButton);
 audio.addEventListener('ended', () => {
 	if (autoplay && tracks.length > 0) {
 		loadTrack(currentTrackIndex + 1);
-		togglePlay();
+		playTrack();
 	} else {
 		updatePlayButton();
 	}

@@ -22,8 +22,8 @@
 				<div class="now-playing" id="player">
 					<div class="cover-wrap">
 						<div class="cover-art" id="cover-art">
-							<img src="image.png" alt="A cat listening to music">
-c:\Users\cxc\OneDrive\Music\jisoo--your-love-special-video-rainforest-wild-asia-singapore.mp3 c:\Users\cxc\OneDrive\Music\eyes-closed-official-mv.mp3						</div>
+							<img id="cover-img" src="image.png" alt="A cat listening to music">
+						</div>
 						<span class="playing-badge" id="playing-badge">READY</span>
 					</div>
 					<div class="track-heading">
@@ -50,19 +50,14 @@ c:\Users\cxc\OneDrive\Music\jisoo--your-love-special-video-rainforest-wild-asia-
 					<span id="volume-value">80%</span>
 				</div>
 
-				<p class="status-message" id="status-message" role="status">Add audio files to the audio folder to start listening.</p>
+				<p class="status-message" id="status-message" role="status">Ready to play.</p>
 				<audio id="audio" preload="metadata"></audio>
 			</div>
 
 			<aside class="playlist-panel" aria-labelledby="playlist-title">
 				<div class="playlist-header">
 					<div><p class="eyebrow">Your collection</p><h2 id="playlist-title">Playlist</h2></div>
-					<span class="track-count" id="track-count">0 tracks</span>
-				</div>
-				<div class="playlist-actions">
-					<label class="add-music-button" for="file-input">＋ Add music</label>
-					<input id="file-input" type="file" accept="audio/*" multiple>
-					<button class="clear-button" id="clear-button" type="button">Clear</button>
+					<span class="track-count" id="track-count">15 tracks</span>
 				</div>
 				<ol class="playlist" id="playlist"></ol>
 			</aside>
